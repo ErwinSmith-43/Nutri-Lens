@@ -101,9 +101,14 @@ const AddCard = ({ onClick }: { onClick: () => void }) => (
 
 /* ══════════════════════════════════════════════════════════════════════ */
 const ProfileSelector = () => {
-  const { profiles, setActiveProfile, deleteProfile, user } = useAuth();
+  const { profiles, setActiveProfile, deleteProfile, logout, user } = useAuth();
   const navigate = useNavigate();
   const [editMode, setEditMode] = useState(false);
+
+  const handleSignOut = () => {
+    logout();
+    navigate('/login', { replace: true });
+  };
 
   const handleSelect = (profile: NutriProfile) => {
     if (editMode) return;
@@ -171,7 +176,7 @@ const ProfileSelector = () => {
       )}
 
       {/* ── Footer actions ──────────────────────────────────────────── */}
-      <div className="relative z-10 mt-14 flex items-center gap-5">
+      <div className="relative z-10 mt-14 flex items-center gap-4">
         {profiles.length > 0 && (
           <button
             id="btn-manage-profiles"
@@ -186,6 +191,14 @@ const ProfileSelector = () => {
             {editMode ? '✓ Done' : '✏ Manage Profiles'}
           </button>
         )}
+
+        <button
+          id="btn-signout-selector"
+          onClick={handleSignOut}
+          className="px-5 py-2 rounded-lg border border-gray-800 bg-transparent text-gray-600 hover:border-red-500/50 hover:text-red-400 text-sm font-semibold tracking-wide transition-all duration-200 cursor-pointer"
+        >
+          🚪 Sign Out
+        </button>
       </div>
 
       {/* ── Edit mode banner ────────────────────────────────────────── */}
