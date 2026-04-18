@@ -274,7 +274,7 @@ Respond with ONLY this JSON (no markdown, no explanation):
       setPhase('Generating your meals…');
       const client = new Groq({ apiKey: GROQ_KEY, dangerouslyAllowBrowser: true });
       const completion = await client.chat.completions.create({
-        model: 'llama3-70b-8192',
+        model: 'llama-3.3-70b-versatile',
         messages: [{ role: 'user', content: prompt }],
         response_format: { type: 'json_object' },
         temperature: 0.7,
@@ -399,7 +399,7 @@ Respond with ONLY this JSON (no markdown, no explanation):
         <div>
           <h1 className="text-3xl font-black text-white tracking-tight">🍽️ Your Meal Suggestions</h1>
           <p className="text-gray-500 text-sm mt-1">
-            Personalised by <span className="text-emerald-400 font-semibold">Llama 3 70B</span> via Groq — based on your profile and ingredients
+            Personalised by <span className="text-emerald-400 font-semibold">Llama 3.3 70B</span> via Groq — based on your profile and ingredients
           </p>
         </div>
         <div className="flex gap-3 flex-shrink-0">
