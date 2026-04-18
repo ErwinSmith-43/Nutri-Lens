@@ -1,19 +1,53 @@
 import { useAuth } from '../context/useAuth';
 import { useNavigate } from 'react-router-dom';
 
-/* ── Mini stat card ──────────────────────────────────────────────────── */
-const Stat = ({ label, value, unit, color }: { label: string; value: string; unit: string; color: string }) => (
-  <div className="glass glass-hover rounded-2xl p-5 flex flex-col gap-2 cursor-default transition-all duration-200 group">
-    <span className="text-xs text-gray-500 font-semibold uppercase tracking-widest">{label}</span>
-    <div className="flex items-end gap-1.5">
-      <span className={`text-3xl font-black ${color}`}>{value}</span>
-      <span className="text-gray-600 text-xs mb-1">{unit}</span>
+/* ── Nutrition progress card ─────────────────────────────────────────── */
+const NutritionCard = ({
+  label, consumed, target, unit, color, barColor,
+}: {
+  label: string; consumed: number; target: number;
+  unit: string; color: string; barColor: string;
+}) => {
+  const pct = target > 0 ? Math.min(100, Math.round((consumed / target) * 100)) : 0;
+  const isOver = consumed > target;
+  return (
+    <div className="glass rounded-2xl p-5 flex flex-col gap-3">
+      {/* Label + percentage */}
+      <div className="flex items-center justify-between">
+        <span className="text-xs text-gray-500 font-bold uppercase tracking-widest">{label}</span>
+        <span className={`text-xs font-bold tabular-nums ${
+          isOver ? 'text-rose-400' : pct >= 80 ? 'text-emerald-400' : 'text-gray-500'
+        }`}>{pct}%</span>
+      </div>
+      {/* Value display */}
+      <div className="flex items-baseline gap-1">
+        <span className={`text-2xl font-black tabular-nums ${isOver ? 'text-rose-400' : color}`}>
+          {consumed}
+        </span>
+        <span className="text-gray-600 text-xs">/</span>
+        <span className="text-gray-500 text-sm font-semibold tabular-nums">{target}</span>
+        <span className="text-gray-600 text-xs">{unit}</span>
+      </div>
+      {/* Progress track */}
+      <div className="h-1.5 rounded-full bg-white/6 overflow-hidden">
+        <div
+          className={`h-1.5 rounded-full transition-all duration-700 ease-out ${
+            isOver ? 'bg-rose-500' : barColor
+          }`}
+          style={{ width: `${pct}%` }}
+        />
+      </div>
+      {/* Remaining or over */}
+      <p className="text-[10px] text-gray-700 tabular-nums">
+        {isOver
+          ? `${consumed - target} ${unit} over target`
+          : consumed === 0
+          ? `Target: ${target} ${unit}`
+          : `${target - consumed} ${unit} remaining`}
+      </p>
     </div>
-    <div className="h-1 rounded-full bg-white/5">
-      <div className={`h-1 rounded-full w-0 group-hover:w-full transition-all duration-700 ${color.replace('text-','bg-')}/30`} />
-    </div>
-  </div>
-);
+  );
+};
 
 /* ── Action tile ─────────────────────────────────────────────────────── */
 const Action = ({ icon, title, desc, label, onClick, accent }: {
@@ -37,10 +71,10 @@ const Home = () => {
   const { activeProfiles } = useAuth();
   const navigate = useNavigate();
 
-  const isGroup  = activeProfiles.length > 1;
-  const primary  = activeProfiles[0];
+  const isGroup = activeProfiles.length > 1;
+  const primary = activeProfiles[0];
 
-  /* Rough TDEE per profile */
+  /* ── Avg TDEE across all active profiles ── */
   const avgTdee = activeProfiles.length
     ? Math.round(activeProfiles.reduce((sum, p) => {
         const bmr = p.gender === 'Female'
@@ -48,7 +82,21 @@ const Home = () => {
           : 10 * p.weight + 6.25 * p.height - 5 * p.age + 5;
         return sum + bmr * 1.375;
       }, 0) / activeProfiles.length)
-    : 0;
+    : 2000;
+
+  /* ── Daily macro targets derived from TDEE ── */
+  // Protein: 1.6g per avg kg of body weight
+  // Fat: 25% of TDEE
+  // Carbs: remainder
+  const avgWeight = activeProfiles.length
+    ? Math.round(activeProfiles.reduce((s, p) => s + p.weight, 0) / activeProfiles.length)
+    : 70;
+  const targetProtein = Math.round(avgWeight * 1.6);
+  const targetFat     = Math.round((avgTdee * 0.25) / 9);
+  const targetCarbs   = Math.round((avgTdee - targetProtein * 4 - targetFat * 9) / 4);
+
+  /* ── Today's consumed (0 until scan history is integrated) ── */
+  const consumed = { calories: 0, protein: 0, carbs: 0, fat: 0 };
 
   return (
     <div className="page-enter space-y-8">
@@ -106,17 +154,27 @@ const Home = () => {
         {/* ── LEFT: Today's stats ─────────────────────────────────────── */}
         <div className="col-span-2 space-y-6">
 
-          {/* Stat row */}
+          {/* Nutrition cards */}
           <div>
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-white font-bold text-lg">Today's Nutrition</h2>
-              <span className="text-gray-600 text-xs glass rounded-lg px-3 py-1">No scans yet today</span>
+              <span className="text-gray-600 text-xs glass rounded-lg px-3 py-1">
+                {consumed.calories === 0 ? 'No scans today — targets shown' : `${consumed.calories} kcal logged`}
+              </span>
             </div>
             <div className="grid grid-cols-4 gap-4">
-              <Stat label="Calories" value="—" unit="kcal" color="text-amber-400" />
-              <Stat label="Protein"  value="—" unit="g"    color="text-blue-400"  />
-              <Stat label="Carbs"    value="—" unit="g"    color="text-purple-400"/>
-              <Stat label="Fat"      value="—" unit="g"    color="text-rose-400"  />
+              <NutritionCard
+                label="Calories" consumed={consumed.calories} target={avgTdee}
+                unit="kcal" color="text-amber-400" barColor="bg-amber-500/70" />
+              <NutritionCard
+                label="Protein" consumed={consumed.protein} target={targetProtein}
+                unit="g" color="text-blue-400" barColor="bg-blue-500/70" />
+              <NutritionCard
+                label="Carbs" consumed={consumed.carbs} target={targetCarbs}
+                unit="g" color="text-purple-400" barColor="bg-purple-500/70" />
+              <NutritionCard
+                label="Fat" consumed={consumed.fat} target={targetFat}
+                unit="g" color="text-rose-400" barColor="bg-rose-500/70" />
             </div>
           </div>
 
