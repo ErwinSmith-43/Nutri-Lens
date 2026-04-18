@@ -16,6 +16,7 @@ interface Meal {
   cookTime: number;      // minutes
   ingredients: string[];
   tips: string;
+  instructions: string[];
 }
 
 /* ── Module-level constants ─────────────────────────────────────────── */
@@ -116,7 +117,7 @@ const MacroRatioBar = ({ protein, carbs, fat, calories }: {
 };
 
 /** Full meal result card */
-const MealCard = ({ meal, rank }: { meal: Meal; rank: number }) => {
+const MealCard = ({ meal, rank, onSelect }: { meal: Meal; rank: number; onSelect: () => void }) => {
   const accents = [
     { strip: 'from-emerald-500/70 to-sky-500/0',  border: 'border-emerald-500/15', badge: 'bg-emerald-500/15 text-emerald-400' },
     { strip: 'from-sky-500/70    to-violet-500/0', border: 'border-sky-500/15',     badge: 'bg-sky-500/15     text-sky-400'     },
@@ -184,12 +185,19 @@ const MealCard = ({ meal, rank }: { meal: Meal; rank: number }) => {
 
         {/* Chef tip */}
         {meal.tips && (
-          <div className="mt-auto flex items-start gap-2.5
+          <div className="mt-auto mb-4 flex items-start gap-2.5
             bg-emerald-950/50 border border-emerald-800/25 rounded-2xl px-4 py-3.5">
             <span className="text-base flex-shrink-0">💡</span>
             <p className="text-emerald-300/75 text-xs leading-relaxed">{meal.tips}</p>
           </div>
         )}
+
+        {/* Action Button */}
+        <button onClick={onSelect}
+          className="mt-auto w-full py-3 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 font-bold text-sm
+            hover:bg-emerald-500/20 hover:border-emerald-500/50 hover:text-emerald-300 transition-all duration-200 cursor-pointer">
+          View Recipe Details →
+        </button>
       </div>
     </div>
   );
@@ -197,7 +205,7 @@ const MealCard = ({ meal, rank }: { meal: Meal; rank: number }) => {
 
 /* ══ RESULTS PAGE ═══════════════════════════════════════════════════════ */
 const Results = () => {
-  const { activeProfiles } = useAuth();
+  const { activeProfiles, addHistoryEntry } = useAuth();
   const navigate = useNavigate();
 
   /* Derive ingredients + macros once (stable across renders) */
@@ -216,6 +224,7 @@ const Results = () => {
       : null;
 
   const [meals,   setMeals]   = useState<Meal[]>([]);
+  const [selectedMeal, setSelectedMeal] = useState<Meal | null>(null);
   const [loading, setLoading] = useState(initError === null);
   const [error,   setError]   = useState<string | null>(initError);
   const [phase,   setPhase]   = useState('Sending to Llama 3…');
@@ -236,7 +245,7 @@ const Results = () => {
       ).join('\n');
 
       const prompt = `You are an expert Indian nutritionist and chef.
-Based on the profiles and ingredients below, suggest exactly 3 healthy Indian meals.
+Based on the profiles and ingredients below, suggest exactly 6 healthy Indian meals.
 
 USER PROFILES:
 ${profileSummaries || '• No specific profile provided'}
@@ -266,7 +275,8 @@ Respond with ONLY this JSON (no markdown, no explanation):
       "healthScore": <decimal 1.0-5.0>,
       "cookTime": <number in minutes>,
       "ingredients": ["ingredient1", "ingredient2"],
-      "tips": "one practical cooking tip"
+      "tips": "one practical cooking tip",
+      "instructions": ["Step 1 description...", "Step 2 description...", "Step 3 description..."]
     }
   ]
 }`;
@@ -286,7 +296,7 @@ Respond with ONLY this JSON (no markdown, no explanation):
       if (!parsed.meals || !Array.isArray(parsed.meals) || parsed.meals.length === 0)
         throw new Error('Unexpected response structure from Llama 3');
 
-      setMeals(parsed.meals.slice(0, 3));
+      setMeals(parsed.meals.slice(0, 6));
     } catch (e) {
       console.error(e);
       setError(
@@ -338,8 +348,8 @@ Respond with ONLY this JSON (no markdown, no explanation):
         </div>
       </div>
 
-      <div className="grid grid-cols-3 gap-6">
-        <SkeletonCard /><SkeletonCard /><SkeletonCard />
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <SkeletonCard /><SkeletonCard /><SkeletonCard /><SkeletonCard /><SkeletonCard /><SkeletonCard />
       </div>
     </div>
   );
@@ -392,7 +402,89 @@ Respond with ONLY this JSON (no markdown, no explanation):
 
   /* ══ RESULTS ════════════════════════════════════════════════════════ */
   return (
-    <div className="page-enter space-y-8">
+    <div className="page-enter space-y-8 relative">
+
+      {/* ── Recipe Modal Overlay ── */}
+      {selectedMeal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setSelectedMeal(null)} />
+          <div className="relative w-full max-w-2xl max-h-[85vh] bg-[#070a0e] border border-white/10 rounded-3xl shadow-2xl flex flex-col overflow-hidden">
+            {/* Header */}
+            <div className="p-6 md:p-8 border-b border-white/10 flex justify-between items-start bg-emerald-950/20">
+              <div>
+                <h2 className="text-2xl font-black text-white pr-8">{selectedMeal.name}</h2>
+                <div className="flex flex-wrap gap-4 mt-2 text-xs font-semibold text-gray-400">
+                  <span className="flex items-center gap-1">⏱ {selectedMeal.cookTime} mins</span>
+                  <span className="text-amber-400">🔥 {selectedMeal.calories} kcal</span>
+                </div>
+              </div>
+              <button onClick={() => setSelectedMeal(null)} className="absolute top-6 right-6 text-gray-400 hover:text-white p-2 cursor-pointer bg-white/5 rounded-full hover:bg-white/10 transition-colors">✕</button>
+            </div>
+            
+            {/* Scrollable Body */}
+            <div className="p-6 md:p-8 overflow-y-auto space-y-8 flex-1">
+              
+              <div>
+                <h3 className="text-[10px] font-black text-emerald-400 uppercase tracking-widest mb-3">Ingredients Needed</h3>
+                <div className="flex flex-wrap gap-2">
+                  {selectedMeal.ingredients.map(ing => (
+                    <span key={ing} className="px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 text-gray-300 text-sm">
+                      {ing}
+                    </span>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <h3 className="text-[10px] font-black text-emerald-400 uppercase tracking-widest mb-3">Step-by-Step Instructions</h3>
+                <ol className="space-y-4">
+                  {selectedMeal.instructions?.map((step, idx) => (
+                    <li key={idx} className="flex gap-4 items-start text-gray-300 text-sm leading-relaxed">
+                      <span className="flex-shrink-0 flex items-center justify-center w-6 h-6 rounded-full bg-emerald-500/10 text-emerald-400 font-bold text-xs border border-emerald-500/20">
+                        {idx + 1}
+                      </span>
+                      <span className="pt-0.5">{step}</span>
+                    </li>
+                  ))}
+                  {(!selectedMeal.instructions || selectedMeal.instructions.length === 0) && (
+                    <p className="text-gray-500 italic text-sm">No instructions provided.</p>
+                  )}
+                </ol>
+              </div>
+
+              {selectedMeal.tips && (
+                <div className="bg-emerald-950/40 border border-emerald-800/30 rounded-2xl p-4 flex gap-3 items-start">
+                  <span className="text-xl">💡</span>
+                  <p className="text-emerald-300/80 text-sm leading-relaxed">{selectedMeal.tips}</p>
+                </div>
+              )}
+
+            </div>
+
+            {/* Footer */}
+            <div className="p-6 border-t border-white/10 bg-[#0a0e14] flex justify-between gap-4">
+              <button onClick={() => setSelectedMeal(null)}
+                className="px-6 py-3 rounded-2xl border border-white/10 text-gray-400 font-semibold text-sm hover:text-white hover:bg-white/5 transition-colors cursor-pointer w-full max-w-fit">
+                ← Go Back
+              </button>
+              <button 
+                onClick={() => {
+                  addHistoryEntry({
+                    profileIds: activeProfiles.map(p => p.id),
+                    mealName: selectedMeal.name,
+                    calories: selectedMeal.calories,
+                    ingredients: selectedMeal.ingredients
+                  });
+                  setSelectedMeal(null);
+                  navigate('/history');
+                }}
+                className="flex-1 px-4 py-3 rounded-2xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-sm transition-transform hover:scale-[1.02] active:scale-[0.98] shadow-lg shadow-emerald-500/20 cursor-pointer">
+                Confirm & Add to History →
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ── Page header ── */}
       <div className="flex items-start justify-between gap-6">
@@ -472,10 +564,14 @@ Respond with ONLY this JSON (no markdown, no explanation):
         </div>
       </div>
 
-      {/* ── 3 meal cards ── */}
-      <div className="grid grid-cols-3 gap-6">
+      {/* ── 6 meal cards ── */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {meals.map((meal, i) => (
-          <MealCard key={`${meal.name}-${i}`} meal={meal} rank={i} />
+          <MealCard key={`${meal.name}-${i}`} meal={meal} rank={i}
+            onSelect={() => {
+              setSelectedMeal(meal);
+            }}
+          />
         ))}
       </div>
 

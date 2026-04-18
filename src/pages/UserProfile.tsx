@@ -44,7 +44,7 @@ const UserProfile = () => {
   const [form,   setForm]   = useState<ProfileForm>(INIT);
   const [goal,   setGoal]   = useState<NutriGoal | ''>('');
   const [diets,  setDiets]  = useState<Set<DietaryPref>>(new Set());
-  const [errors, setErrors] = useState<Partial<ProfileForm & { goal: string }>>({});
+  const [errors, setErrors] = useState<Partial<Record<keyof ProfileForm, string> & { goal: string }>>({});
   const { addProfile, profiles } = useAuth();
   const navigate = useNavigate();
 

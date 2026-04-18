@@ -23,6 +23,15 @@ export interface NutriProfile {
   dietaryPreferences?: DietaryPref[];
 }
 
+export interface MealHistoryEntry {
+  id: string;
+  timestamp: number;
+  profileIds: string[]; // IDs of the profiles who ate the meal
+  mealName: string;
+  calories: number;
+  ingredients: string[];
+}
+
 export interface AuthContextValue {
   user: GoogleUser | null;
   login: (user: GoogleUser) => void;
@@ -40,6 +49,10 @@ export interface AuthContextValue {
   setActiveProfiles: (profiles: NutriProfile[]) => void;
   /** Clear all active profiles (go back to selector) */
   clearActiveProfiles: () => void;
+  /** Log of past generated and consumed meals */
+  history: MealHistoryEntry[];
+  /** Record a new meal into the user's history */
+  addHistoryEntry: (entry: Omit<MealHistoryEntry, 'id' | 'timestamp'>) => void;
 }
 
 /* ── Context object (no components here — satisfies react-refresh) ── */

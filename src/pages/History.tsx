@@ -2,7 +2,7 @@ import { useAuth } from '../context/useAuth';
 import { useNavigate } from 'react-router-dom';
 
 const History = () => {
-  const { activeProfiles } = useAuth();
+  const { activeProfiles, history } = useAuth();
   const navigate = useNavigate();
 
   return (
@@ -45,26 +45,62 @@ const History = () => {
         </div>
       )}
 
-      {/* ══ EMPTY STATE ═════════════════════════════════════════════ */}
-      <div className="grid grid-cols-3 gap-6">
-        {/* Main empty state */}
-        <div className="col-span-2 glass rounded-3xl p-16 flex flex-col items-center
-          justify-center text-center">
-          <div className="w-20 h-20 rounded-3xl glass flex items-center justify-center
-            text-4xl mb-6 border border-white/8">
-            📷
-          </div>
-          <h2 className="text-white font-black text-xl mb-2">No scans yet</h2>
-          <p className="text-gray-500 text-sm max-w-xs leading-relaxed mb-8">
-            Scan your first meal to start tracking nutrition history.
-            Upload a food photo or pick ingredients manually.
-          </p>
-          <button onClick={() => navigate('/scan')}
-            className="px-6 py-3 rounded-2xl bg-emerald-500 hover:bg-emerald-400
-              active:scale-[0.98] text-gray-950 font-bold text-sm transition-all
-              duration-150 cursor-pointer shadow-lg shadow-emerald-900/40">
-            Scan a meal →
-          </button>
+      {/* ══ CONTENT ═════════════════════════════════════════════════ */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        
+        {/* Main section: History Feed or Empty State */}
+        <div className="lg:col-span-2 space-y-4">
+          {history.length === 0 ? (
+            <div className="glass rounded-3xl p-16 flex flex-col items-center justify-center text-center">
+              <div className="w-20 h-20 rounded-3xl glass flex items-center justify-center text-4xl mb-6 border border-white/8">
+                📷
+              </div>
+              <h2 className="text-white font-black text-xl mb-2">No meals selected yet</h2>
+              <p className="text-gray-500 text-sm max-w-xs leading-relaxed mb-8">
+                Scan ingredients and pick a recommended meal to start tracking your nutrition history!
+              </p>
+              <button onClick={() => navigate('/scan')}
+                className="px-6 py-3 rounded-2xl bg-emerald-500 hover:bg-emerald-400
+                  active:scale-[0.98] text-gray-950 font-bold text-sm transition-all
+                  duration-150 cursor-pointer shadow-lg shadow-emerald-900/40">
+                Scan ingredients →
+              </button>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {history.map((entry) => (
+                <div key={entry.id} className="glass rounded-2xl p-6 border border-white/6 hover:border-white/15 transition-all">
+                  <div className="flex justify-between items-start mb-4">
+                    <div>
+                      <h3 className="text-xl font-bold text-white mb-1">{entry.mealName}</h3>
+                      <p className="text-xs text-gray-500 font-medium tracking-wide">
+                        {new Date(entry.timestamp).toLocaleString(undefined, {
+                          weekday: 'long', month: 'short', day: 'numeric',
+                          hour: '2-digit', minute: '2-digit'
+                        })}
+                      </p>
+                    </div>
+                    <div className="flex flex-col items-end gap-1">
+                      <span className="bg-emerald-500/10 text-emerald-400 font-black text-lg px-3 py-1 rounded-xl">
+                        {entry.calories} kcal
+                      </span>
+                    </div>
+                  </div>
+                  
+                  <div className="pt-4 border-t border-white/6">
+                    <p className="text-[10px] uppercase font-bold text-gray-600 tracking-wider mb-2">Ingredients Used</p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {entry.ingredients.map(ing => (
+                        <span key={ing} className="px-2 py-1 rounded-md bg-white/4 border border-white/6 text-gray-400 text-xs text-center">
+                          {ing}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Side info cards */}
@@ -94,9 +130,8 @@ const History = () => {
               How it works
             </p>
             <p className="text-gray-500 text-xs leading-relaxed">
-              Every time you tap <strong className="text-gray-400">Next →</strong> on
-              the Ingredients screen, that scan is saved here with a timestamp, ingredient
-              list, and calculated macros.
+              Every time you tap <strong className="text-emerald-400">Select & Eat This ✓</strong> on
+              a generated meal recommendation, that meal is saved here to your history.
             </p>
           </div>
         </div>

@@ -105,7 +105,7 @@ const RootLayout = () => {
 
               {/* Dropdown */}
               {menuOpen && (
-                <div className="absolute right-0 mt-2 w-72 rounded-2xl glass border border-white/8 shadow-2xl shadow-black/60 overflow-hidden z-50">
+                <div className="absolute right-0 mt-2 w-72 rounded-2xl bg-[#0e1117] border border-white/8 shadow-2xl shadow-black/60 overflow-hidden z-50">
                   {/* Header */}
                   <div className="px-5 py-4 border-b border-white/5">
                     <p className="text-[10px] text-gray-500 uppercase tracking-[0.15em] font-bold mb-3">Tracking for</p>
