@@ -128,7 +128,7 @@ const Scan = () => {
 
   const handleNext = () => {
     sessionStorage.setItem('nutriLensIngredients', JSON.stringify(allItems));
-    navigate('/home');
+    navigate('/results');
   };
 
   return (

@@ -11,6 +11,7 @@ import Home from './pages/Home';
 import Scan from './pages/Scan';
 import History from './pages/History';
 import Profile from './pages/Profile';
+import Results from './pages/Results';
 
 const CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID as string | undefined;
 
@@ -79,6 +80,7 @@ const router = createBrowserRouter([
               { path: 'scan',    element: <Scan />    },
               { path: 'history', element: <History /> },
               { path: 'profile', element: <Profile /> },
+              { path: 'results', element: <Results /> },
             ],
           },
         ],

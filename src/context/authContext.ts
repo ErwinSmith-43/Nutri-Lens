@@ -8,6 +8,9 @@ export interface GoogleUser {
   sub: string;
 }
 
+export type NutriGoal = 'weight-loss' | 'muscle-gain' | 'maintenance' | 'general-health';
+export type DietaryPref = 'vegetarian' | 'vegan' | 'gluten-free' | 'dairy-free' | 'low-carb' | 'high-protein';
+
 export interface NutriProfile {
   id: string;
   avatar: string;
@@ -16,6 +19,8 @@ export interface NutriProfile {
   gender: 'Male' | 'Female' | 'Other';
   weight: number;  // kg
   height: number;  // cm
+  goal?: NutriGoal;
+  dietaryPreferences?: DietaryPref[];
 }
 
 export interface AuthContextValue {
