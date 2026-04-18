@@ -1,11 +1,129 @@
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import * as mobilenet from '@tensorflow-models/mobilenet';
 import '@tensorflow/tfjs';
 
 /* ══ DATA ════════════════════════════════════════════════════════════════ */
 
-const MASALAS: { name: string; emoji: string }[] = [
+interface IngredientItem { name: string; emoji: string }
+
+const VEGETABLES: IngredientItem[] = [
+  { name: 'Tomato',        emoji: '🍅' },
+  { name: 'Onion',         emoji: '🧅' },
+  { name: 'Potato',        emoji: '🥔' },
+  { name: 'Garlic',        emoji: '🧄' },
+  { name: 'Ginger',        emoji: '🫚' },
+  { name: 'Carrot',        emoji: '🥕' },
+  { name: 'Spinach',       emoji: '🥬' },
+  { name: 'Broccoli',      emoji: '🥦' },
+  { name: 'Cauliflower',   emoji: '🤍' },
+  { name: 'Cabbage',       emoji: '🥗' },
+  { name: 'Bell Pepper',   emoji: '🫑' },
+  { name: 'Eggplant',      emoji: '🍆' },
+  { name: 'Cucumber',      emoji: '🥒' },
+  { name: 'Corn',          emoji: '🌽' },
+  { name: 'Mushroom',      emoji: '🍄' },
+  { name: 'Sweet Potato',  emoji: '🍠' },
+  { name: 'Green Beans',   emoji: '🫛' },
+  { name: 'Zucchini',      emoji: '🥒' },
+  { name: 'Pumpkin',       emoji: '🎃' },
+  { name: 'Beetroot',      emoji: '🟣' },
+  { name: 'Radish',        emoji: '🔴' },
+  { name: 'Lettuce',       emoji: '🥬' },
+  { name: 'Okra',          emoji: '💚' },
+  { name: 'Bottle Gourd',  emoji: '🟢' },
+  { name: 'Bitter Gourd',  emoji: '🥒' },
+  { name: 'Green Peas',    emoji: '🟢' },
+  { name: 'Spring Onion',  emoji: '🧅' },
+  { name: 'Mint Leaves',   emoji: '🌿' },
+  { name: 'Curry Leaves',  emoji: '🍃' },
+  { name: 'Coriander Leaves', emoji: '🌱' },
+];
+
+const FRUITS: IngredientItem[] = [
+  { name: 'Banana',     emoji: '🍌' },
+  { name: 'Apple',      emoji: '🍎' },
+  { name: 'Orange',     emoji: '🍊' },
+  { name: 'Mango',      emoji: '🥭' },
+  { name: 'Lemon',      emoji: '🍋' },
+  { name: 'Strawberry', emoji: '🍓' },
+  { name: 'Pineapple',  emoji: '🍍' },
+  { name: 'Grapes',     emoji: '🍇' },
+  { name: 'Watermelon', emoji: '🍉' },
+  { name: 'Papaya',     emoji: '🟠' },
+  { name: 'Guava',      emoji: '🟢' },
+  { name: 'Pomegranate',emoji: '❤️' },
+  { name: 'Coconut',    emoji: '🥥' },
+  { name: 'Lime',       emoji: '🟩' },
+  { name: 'Avocado',    emoji: '🥑' },
+  { name: 'Kiwi',       emoji: '🥝' },
+  { name: 'Peach',      emoji: '🍑' },
+  { name: 'Cherry',     emoji: '🍒' },
+];
+
+const PROTEINS: IngredientItem[] = [
+  { name: 'Chicken',    emoji: '🍗' },
+  { name: 'Eggs',       emoji: '🥚' },
+  { name: 'Fish',       emoji: '🐟' },
+  { name: 'Shrimp',     emoji: '🦐' },
+  { name: 'Salmon',     emoji: '🐠' },
+  { name: 'Mutton',     emoji: '🥩' },
+  { name: 'Paneer',     emoji: '🧀' },
+  { name: 'Tofu',       emoji: '⬜' },
+  { name: 'Soya Chunks',emoji: '🟤' },
+  { name: 'Prawns',     emoji: '🦐' },
+  { name: 'Tuna',       emoji: '🐟' },
+  { name: 'Turkey',     emoji: '🦃' },
+];
+
+const GRAINS: IngredientItem[] = [
+  { name: 'Rice',        emoji: '🍚' },
+  { name: 'Wheat Flour', emoji: '🌾' },
+  { name: 'Bread',       emoji: '🍞' },
+  { name: 'Pasta',       emoji: '🍝' },
+  { name: 'Noodles',     emoji: '🍜' },
+  { name: 'Oats',        emoji: '🥣' },
+  { name: 'Quinoa',      emoji: '🟡' },
+  { name: 'Semolina',    emoji: '🟡' },
+  { name: 'Corn Flour',  emoji: '🌽' },
+  { name: 'Poha',        emoji: '🍚' },
+  { name: 'Besan',       emoji: '🟡' },
+  { name: 'Maida',       emoji: '⚪' },
+  { name: 'Bajra',       emoji: '🟤' },
+  { name: 'Jowar',       emoji: '🟠' },
+  { name: 'Ragi',        emoji: '🟫' },
+];
+
+const DAIRY_FATS: IngredientItem[] = [
+  { name: 'Milk',       emoji: '🥛' },
+  { name: 'Curd',       emoji: '🥣' },
+  { name: 'Ghee',       emoji: '🧈' },
+  { name: 'Butter',     emoji: '🧈' },
+  { name: 'Cheese',     emoji: '🧀' },
+  { name: 'Oil',        emoji: '🫙' },
+  { name: 'Cream',      emoji: '🍦' },
+  { name: 'Coconut Oil',emoji: '🥥' },
+  { name: 'Olive Oil',  emoji: '🫒' },
+  { name: 'Coconut Milk',emoji: '🥥' },
+];
+
+const LEGUMES: IngredientItem[] = [
+  { name: 'Toor Dal',    emoji: '🟡' },
+  { name: 'Moong Dal',   emoji: '💛' },
+  { name: 'Chana Dal',   emoji: '🟠' },
+  { name: 'Masoor Dal',  emoji: '🔴' },
+  { name: 'Urad Dal',    emoji: '⚫' },
+  { name: 'Rajma',       emoji: '🫘' },
+  { name: 'Chole',       emoji: '🟤' },
+  { name: 'Lentils',     emoji: '🟡' },
+  { name: 'Peas',        emoji: '🟢' },
+  { name: 'Black Beans', emoji: '⚫' },
+  { name: 'Peanuts',     emoji: '🥜' },
+  { name: 'Cashews',     emoji: '🟡' },
+  { name: 'Almonds',     emoji: '🟤' },
+];
+
+const MASALAS: IngredientItem[] = [
   { name: 'Turmeric',          emoji: '🟡' },
   { name: 'Cumin Seeds',       emoji: '🌿' },
   { name: 'Coriander Powder',  emoji: '🌱' },
@@ -13,25 +131,87 @@ const MASALAS: { name: string; emoji: string }[] = [
   { name: 'Garam Masala',      emoji: '✨' },
   { name: 'Salt',              emoji: '🧂' },
   { name: 'Mustard Seeds',     emoji: '⚫' },
-  { name: 'Black Pepper',      emoji: '🫚' },
+  { name: 'Black Pepper',      emoji: '⚫' },
   { name: 'Cardamom',          emoji: '💚' },
   { name: 'Hing',              emoji: '🟤' },
   { name: 'Kasuri Methi',      emoji: '🌾' },
   { name: 'Bay Leaves',        emoji: '🍃' },
+  { name: 'Cinnamon',          emoji: '🟤' },
+  { name: 'Cloves',            emoji: '🟤' },
+  { name: 'Fennel Seeds',      emoji: '🌿' },
+  { name: 'Fenugreek Seeds',   emoji: '🟡' },
+  { name: 'Chaat Masala',      emoji: '✨' },
+  { name: 'Amchur',            emoji: '🟤' },
+  { name: 'Saffron',           emoji: '🟠' },
+  { name: 'Nutmeg',            emoji: '🟤' },
+  { name: 'Ajwain',            emoji: '🌿' },
+  { name: 'Oregano',           emoji: '🌿' },
+  { name: 'Paprika',           emoji: '🔴' },
+  { name: 'Sugar',             emoji: '🍬' },
+  { name: 'Tamarind',          emoji: '🟤' },
+  { name: 'Vinegar',           emoji: '🫙' },
+  { name: 'Soy Sauce',        emoji: '🟫' },
+  { name: 'Tomato Paste',      emoji: '🍅' },
+  { name: 'Jaggery',           emoji: '🟤' },
+  { name: 'Sesame Seeds',      emoji: '⚪' },
 ];
 
-const PANTRY: { name: string; emoji: string }[] = [
-  { name: 'Oil',         emoji: '🫙' },
-  { name: 'Ghee',        emoji: '🧈' },
-  { name: 'Rice',        emoji: '🍚' },
-  { name: 'Wheat Flour', emoji: '🌾' },
-  { name: 'Toor Dal',    emoji: '🟡' },
-  { name: 'Moong Dal',   emoji: '💛' },
-  { name: 'Curd',        emoji: '🥣' },
-  { name: 'Milk',        emoji: '🥛' },
-  { name: 'Paneer',      emoji: '🧀' },
-  { name: 'Eggs',        emoji: '🥚' },
-  { name: 'Bread',       emoji: '🍞' },
+/* ── All categories for unified operations ── */
+interface CategoryDef {
+  key: string;
+  icon: string;
+  title: string;
+  desc: string;
+  items: IngredientItem[];
+  accent: string;    // border/badge color
+  chipBg: string;    // chip background
+  chipBorder: string;
+  chipText: string;
+}
+
+const CATEGORIES: CategoryDef[] = [
+  {
+    key: 'vegetables', icon: '🥦', title: 'Vegetables',
+    desc: 'Fresh vegetables — select what you have on hand',
+    items: VEGETABLES,
+    accent: 'emerald', chipBg: 'bg-emerald-500/10', chipBorder: 'border-emerald-500/25', chipText: 'text-emerald-400',
+  },
+  {
+    key: 'fruits', icon: '🍎', title: 'Fruits',
+    desc: 'Fresh and dried fruits available in your kitchen',
+    items: FRUITS,
+    accent: 'amber', chipBg: 'bg-amber-500/10', chipBorder: 'border-amber-500/25', chipText: 'text-amber-400',
+  },
+  {
+    key: 'proteins', icon: '🍗', title: 'Proteins',
+    desc: 'Meat, seafood, and plant-based protein sources',
+    items: PROTEINS,
+    accent: 'rose', chipBg: 'bg-rose-500/10', chipBorder: 'border-rose-500/25', chipText: 'text-rose-400',
+  },
+  {
+    key: 'grains', icon: '🌾', title: 'Grains & Carbs',
+    desc: 'Rice, flours, breads, and other carbohydrate sources',
+    items: GRAINS,
+    accent: 'purple', chipBg: 'bg-purple-500/10', chipBorder: 'border-purple-500/25', chipText: 'text-purple-400',
+  },
+  {
+    key: 'dairy', icon: '🥛', title: 'Dairy & Fats',
+    desc: 'Milk products, oils, and cooking fats',
+    items: DAIRY_FATS,
+    accent: 'sky', chipBg: 'bg-sky-500/10', chipBorder: 'border-sky-500/25', chipText: 'text-sky-400',
+  },
+  {
+    key: 'legumes', icon: '🫘', title: 'Legumes & Nuts',
+    desc: 'Dals, beans, lentils, and dry fruits',
+    items: LEGUMES,
+    accent: 'orange', chipBg: 'bg-orange-500/10', chipBorder: 'border-orange-500/25', chipText: 'text-orange-400',
+  },
+  {
+    key: 'masalas', icon: '🌶️', title: 'Masalas & Spices',
+    desc: 'Spices, seasonings, and condiments for authentic Indian cooking',
+    items: MASALAS,
+    accent: 'yellow', chipBg: 'bg-yellow-500/10', chipBorder: 'border-yellow-500/25', chipText: 'text-yellow-400',
+  },
 ];
 
 const CLASS_MAP: Record<string, string> = {
@@ -81,9 +261,9 @@ const DetectedTag = ({ label, onRemove }: { label: string; onRemove: () => void 
 );
 
 const CheckCard = ({
-  name, emoji, checked, onToggle,
+  name, emoji, checked, onToggle, highlight,
 }: {
-  name: string; emoji: string; checked: boolean; onToggle: () => void;
+  name: string; emoji: string; checked: boolean; onToggle: () => void; highlight?: boolean;
 }) => (
   <button type="button" onClick={onToggle}
     className={`flex items-center gap-2.5 px-3.5 py-3 rounded-2xl border text-sm
@@ -91,6 +271,8 @@ const CheckCard = ({
       active:scale-[0.97]
       ${checked
         ? 'border-emerald-500/50 bg-emerald-500/10 text-emerald-200 shadow-sm shadow-emerald-900/30'
+        : highlight
+        ? 'border-emerald-500/30 bg-emerald-500/5 text-emerald-300 ring-1 ring-emerald-500/20'
         : 'border-white/7 bg-white/2 text-gray-400 hover:border-white/14 hover:bg-white/4 hover:text-gray-200'
       }`}>
     <span className="text-base w-6 text-center flex-shrink-0">{emoji}</span>
@@ -109,8 +291,8 @@ const CheckCard = ({
 );
 
 /* Section header */
-const SectionHeader = ({ icon, title, desc, count, onSelectAll, onClear }: {
-  icon: string; title: string; desc: string; count: number; onSelectAll: () => void; onClear: () => void;
+const SectionHeader = ({ icon, title, desc, count, onSelectAll, onClear, accent }: {
+  icon: string; title: string; desc: string; count: number; onSelectAll: () => void; onClear: () => void; accent: string;
 }) => (
   <div className="flex items-start justify-between mb-5">
     <div>
@@ -118,8 +300,8 @@ const SectionHeader = ({ icon, title, desc, count, onSelectAll, onClear }: {
         <span className="text-xl">{icon}</span>
         <h2 className="text-white font-black text-base">{title}</h2>
         {count > 0 && (
-          <span className="px-2 py-0.5 rounded-full bg-emerald-500/15 border border-emerald-500/30
-            text-emerald-400 text-[10px] font-black">
+          <span className={`px-2 py-0.5 rounded-full bg-${accent}-500/15 border border-${accent}-500/30
+            text-${accent}-400 text-[10px] font-black`}>
             {count}
           </span>
         )}
@@ -155,22 +337,76 @@ const Scan = () => {
   const [isDragging,   setIsDragging]   = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const [masalas, setMasalas] = useState<Set<string>>(new Set());
-  const [pantry,  setPantry]  = useState<Set<string>>(new Set());
+  /* Per-category selection as a single map */
+  const [selected, setSelected] = useState<Record<string, Set<string>>>(() => {
+    const m: Record<string, Set<string>> = {};
+    for (const cat of CATEGORIES) m[cat.key] = new Set();
+    return m;
+  });
+
+  /* Search state */
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchFocused, setSearchFocused] = useState(false);
 
   /* ── Helpers ── */
-  const toggleSet = (
-    setFn: React.Dispatch<React.SetStateAction<Set<string>>>,
-    key: string,
-  ) => {
-    setFn(prev => {
-      const n = new Set(prev);
-      if (n.has(key)) { n.delete(key); } else { n.add(key); }
+  const toggleItem = (catKey: string, itemName: string) => {
+    setSelected(prev => {
+      const n = { ...prev };
+      const s = new Set(n[catKey]);
+      if (s.has(itemName)) s.delete(itemName); else s.add(itemName);
+      n[catKey] = s;
       return n;
     });
   };
 
-  const allItems = [...new Set([...detectedTags, ...Array.from(masalas), ...Array.from(pantry)])];
+  const selectAllInCategory = (catKey: string, items: IngredientItem[]) => {
+    setSelected(prev => ({
+      ...prev,
+      [catKey]: new Set(items.map(i => i.name)),
+    }));
+  };
+
+  const clearCategory = (catKey: string) => {
+    setSelected(prev => ({
+      ...prev,
+      [catKey]: new Set(),
+    }));
+  };
+
+  /* Total count */
+  const totalSelected = useMemo(() => {
+    let count = 0;
+    for (const s of Object.values(selected)) count += s.size;
+    return count;
+  }, [selected]);
+
+  /* All items from detected + selected */
+  const allItems = useMemo(() => {
+    const set = new Set<string>([...detectedTags]);
+    for (const s of Object.values(selected)) {
+      for (const item of s) set.add(item);
+    }
+    return [...set];
+  }, [detectedTags, selected]);
+
+  /* Search filter — which items match */
+  const searchLower = searchQuery.toLowerCase().trim();
+  const matchesSearch = useCallback((name: string) => {
+    if (!searchLower) return false;
+    return name.toLowerCase().includes(searchLower);
+  }, [searchLower]);
+
+  /* Quick search results count */
+  const searchResultCount = useMemo(() => {
+    if (!searchLower) return 0;
+    let count = 0;
+    for (const cat of CATEGORIES) {
+      for (const item of cat.items) {
+        if (item.name.toLowerCase().includes(searchLower)) count++;
+      }
+    }
+    return count;
+  }, [searchLower]);
 
   /* ── TF.js MobileNet detection ── */
   const runDetection = useCallback(async (src: string) => {
@@ -229,8 +465,84 @@ const Scan = () => {
       <div className="mb-8">
         <h1 className="text-3xl font-black text-white tracking-tight">🥘 Ingredients</h1>
         <p className="text-gray-500 text-sm mt-1">
-          Detect from a photo · select masalas · pick pantry staples · then generate your meals
+          Detect from a photo · select your ingredients · then generate personalised meals
         </p>
+      </div>
+
+      {/* ══ SEARCH BAR ════════════════════════════════════════════════ */}
+      <div className="mb-6">
+        <div className={`relative glass rounded-2xl transition-all duration-300 ${
+          searchFocused ? 'ring-2 ring-emerald-500/40 border-emerald-500/30' : ''
+        }`}>
+          <div className="flex items-center gap-3 px-5 py-4">
+            {/* Search icon */}
+            <svg className={`w-5 h-5 flex-shrink-0 transition-colors duration-200 ${
+              searchFocused ? 'text-emerald-400' : 'text-gray-600'
+            }`} fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round"
+                d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
+            </svg>
+
+            {/* Input */}
+            <input
+              id="ingredient-search"
+              type="text"
+              value={searchQuery}
+              onChange={e => setSearchQuery(e.target.value)}
+              onFocus={() => setSearchFocused(true)}
+              onBlur={() => setSearchFocused(false)}
+              placeholder="Search ingredients... (e.g. tomato, chicken, turmeric)"
+              className="flex-1 bg-transparent text-white text-sm font-medium
+                placeholder:text-gray-600 outline-none"
+            />
+
+            {/* Clear button */}
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery('')}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl
+                  bg-white/5 hover:bg-white/10 border border-white/8
+                  text-gray-400 hover:text-white text-xs font-semibold
+                  transition-all cursor-pointer">
+                <span>×</span> Clear
+              </button>
+            )}
+
+            {/* Result count badge */}
+            {searchLower && (
+              <span className={`px-2.5 py-1 rounded-lg text-[10px] font-black ${
+                searchResultCount > 0
+                  ? 'bg-emerald-500/15 border border-emerald-500/30 text-emerald-400'
+                  : 'bg-rose-500/15 border border-rose-500/30 text-rose-400'
+              }`}>
+                {searchResultCount} found
+              </span>
+            )}
+          </div>
+
+          {/* Search tips bar */}
+          {searchFocused && !searchQuery && (
+            <div className="px-5 pb-4 flex items-center gap-2 flex-wrap">
+              <span className="text-[10px] text-gray-700 font-semibold uppercase tracking-wider mr-1">Try:</span>
+              {['tomato', 'chicken', 'dal', 'rice', 'turmeric'].map(term => (
+                <button key={term}
+                  onMouseDown={e => { e.preventDefault(); setSearchQuery(term); }}
+                  className="px-2.5 py-1 rounded-lg bg-white/4 border border-white/6
+                    text-gray-500 hover:text-emerald-400 hover:border-emerald-500/30
+                    text-[10px] font-semibold transition-all cursor-pointer">
+                  {term}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Active search info */}
+        {searchLower && searchResultCount > 0 && (
+          <p className="text-emerald-500/70 text-xs mt-2 ml-1">
+            ✨ Matching items highlighted below — click to add them to your selection
+          </p>
+        )}
       </div>
 
       {/* ══ SECTION 1 — PHOTO UPLOAD ══════════════════════════════════ */}
@@ -380,63 +692,50 @@ const Scan = () => {
         </div>
       </div>
 
-      {/* ══ SECTION 2 — MASALAS ═══════════════════════════════════════ */}
-      <div className="glass rounded-3xl p-7 mb-6">
-        <SectionHeader
-          icon="🌶️"
-          title="Masalas & Spices"
-          desc="Select the spices in your kitchen — these will be used to suggest authentic Indian meals"
-          count={masalas.size}
-          onSelectAll={() => setMasalas(new Set(MASALAS.map(m => m.name)))}
-          onClear={() => setMasalas(new Set())}
-        />
-        <div className="grid grid-cols-3 gap-2.5 lg:grid-cols-4">
-          {MASALAS.map(({ name, emoji }) => (
-            <CheckCard key={name} name={name} emoji={emoji}
-              checked={masalas.has(name)}
-              onToggle={() => toggleSet(setMasalas, name)} />
-          ))}
-        </div>
-        {masalas.size > 0 && (
-          <div className="mt-4 flex flex-wrap gap-1.5 pt-4 border-t border-white/5">
-            {Array.from(masalas).map(m => (
-              <span key={m} className="px-2.5 py-1 rounded-lg bg-emerald-500/10
-                border border-emerald-500/25 text-emerald-400 text-xs font-medium">
-                {m}
-              </span>
-            ))}
-          </div>
-        )}
-      </div>
+      {/* ══ INGREDIENT CATEGORY SECTIONS ═══════════════════════════════ */}
+      {CATEGORIES.map(cat => {
+        const catSelected = selected[cat.key];
+        const count = catSelected.size;
+        /* Filter items if searching */
+        const filteredItems = searchLower
+          ? cat.items.filter(i => i.name.toLowerCase().includes(searchLower))
+          : cat.items;
 
-      {/* ══ SECTION 3 — PANTRY STAPLES ════════════════════════════════ */}
-      <div className="glass rounded-3xl p-7 mb-6">
-        <SectionHeader
-          icon="🥛"
-          title="Pantry Staples"
-          desc="Common everyday ingredients you have at home — select everything that's available"
-          count={pantry.size}
-          onSelectAll={() => setPantry(new Set(PANTRY.map(p => p.name)))}
-          onClear={() => setPantry(new Set())}
-        />
-        <div className="grid grid-cols-3 gap-2.5 lg:grid-cols-4">
-          {PANTRY.map(({ name, emoji }) => (
-            <CheckCard key={name} name={name} emoji={emoji}
-              checked={pantry.has(name)}
-              onToggle={() => toggleSet(setPantry, name)} />
-          ))}
-        </div>
-        {pantry.size > 0 && (
-          <div className="mt-4 flex flex-wrap gap-1.5 pt-4 border-t border-white/5">
-            {Array.from(pantry).map(p => (
-              <span key={p} className="px-2.5 py-1 rounded-lg bg-sky-500/10
-                border border-sky-500/25 text-sky-400 text-xs font-medium">
-                {p}
-              </span>
-            ))}
+        /* If searching and no matches in this category, collapse it */
+        if (searchLower && filteredItems.length === 0) return null;
+
+        return (
+          <div key={cat.key} className="glass rounded-3xl p-7 mb-6">
+            <SectionHeader
+              icon={cat.icon}
+              title={cat.title}
+              desc={cat.desc}
+              count={count}
+              accent={cat.accent}
+              onSelectAll={() => selectAllInCategory(cat.key, cat.items)}
+              onClear={() => clearCategory(cat.key)}
+            />
+            <div className="grid grid-cols-3 gap-2.5 lg:grid-cols-4">
+              {(searchLower ? filteredItems : cat.items).map(({ name, emoji }) => (
+                <CheckCard key={name} name={name} emoji={emoji}
+                  checked={catSelected.has(name)}
+                  highlight={searchLower ? matchesSearch(name) : false}
+                  onToggle={() => toggleItem(cat.key, name)} />
+              ))}
+            </div>
+            {count > 0 && (
+              <div className="mt-4 flex flex-wrap gap-1.5 pt-4 border-t border-white/5">
+                {Array.from(catSelected).map(m => (
+                  <span key={m} className={`px-2.5 py-1 rounded-lg ${cat.chipBg}
+                    border ${cat.chipBorder} ${cat.chipText} text-xs font-medium`}>
+                    {m}
+                  </span>
+                ))}
+              </div>
+            )}
           </div>
-        )}
-      </div>
+        );
+      })}
 
       {/* ══ STICKY BOTTOM BAR — ALL SELECTED + GENERATE ═══════════════ */}
       <div className="fixed bottom-0 left-0 right-0 z-50
@@ -457,7 +756,7 @@ const Scan = () => {
               <p className="text-white text-sm font-bold mb-2">
                 {allItems.length} ingredient{allItems.length !== 1 ? 's' : ''} selected
                 <span className="text-gray-600 font-normal ml-2">
-                  — {detectedTags.length} detected, {masalas.size} spices, {pantry.size} pantry
+                  — {detectedTags.length} detected, {totalSelected} manual
                 </span>
               </p>
               <div className="flex flex-wrap gap-1.5 max-h-10 overflow-hidden">
